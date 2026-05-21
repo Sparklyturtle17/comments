@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
 
   try {
     // Parse the form data
-    const { name, email, comment, entrySlug, allComments } = JSON.parse(event.body);
+    const { name, email, comment, entry, allComments } = JSON.parse(event.body);
 
     if (!name || !comment) {
       return {
@@ -40,7 +40,7 @@ exports.handler = async (event, context) => {
     // Step 2: Add the new comment
     const newComment = {
       id: Date.now().toString(),
-      entry: entrySlug,
+      entry: entry,
       name,
       comment,
       date: new Date().toISOString(),
@@ -64,7 +64,7 @@ exports.handler = async (event, context) => {
     });
 
     // Step 4: Update the file
-    const updatedContent = Buffer.from(JSON.stringify(comments, null, 2)).toString('base64');
+    const updatedContent = Buffer.from(JSON.stringify(allComments, null, 2)).toString('base64');
     await octokit.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
