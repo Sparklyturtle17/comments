@@ -1,10 +1,23 @@
 const { Octokit } = require('@octokit/rest');
 
 exports.handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
+
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
@@ -16,6 +29,7 @@ exports.handler = async (event, context) => {
     if (!name || !comment) {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ error: 'Name and comment are required' }),
       };
     }
@@ -40,7 +54,7 @@ exports.handler = async (event, context) => {
 
     const currentComments = JSON.parse(
       Buffer.from(fileData.content, 'base64').toString('utf-8')
-    )
+    );
 
     // Step 2: Add the new comment
     const newComment = {
@@ -92,12 +106,14 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({ success: true, prUrl: pr.data.html_url }),
     };
   } catch (error) {
     console.error(error);
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: 'Failed to submit comment' }),
     };
   }
