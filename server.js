@@ -4,10 +4,14 @@ const { handler } = require('./netlify/functions/submit-comment');
 const app = express();
 app.use(express.json());
 
-app.post('/netlify/submit-comment', async (req, res) => {
-  const event = { httpMethod: 'POST', body: JSON.stringify(req.body) };
+// Handle both POST and OPTIONS at the same route
+app.all('/netlify/submit-comment', async (req, res) => {
+  const event = {
+    httpMethod: req.method,
+    body: JSON.stringify(req.body),
+  };
   const result = await handler(event, {});
-  res.status(result.statusCode).send(result.body);
+  res.set(result.headers || {}).status(result.statusCode).send(result.body);
 });
 
 const port = process.env.PORT || 3000;
