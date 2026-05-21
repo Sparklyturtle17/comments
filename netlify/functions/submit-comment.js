@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
 
   try {
     // Parse the form data
-    const { name, email, comment, entry, allComments } = JSON.parse(event.body);
+    const { name, email, comment, entry } = JSON.parse(event.body);
 
     if (!name || !comment) {
       return {
@@ -34,8 +34,13 @@ exports.handler = async (event, context) => {
     const { data: fileData } = await octokit.repos.getContent({
       owner: REPO_OWNER,
       repo: REPO_NAME,
+      path: COMMENTS_FILE_PATH,
       ref: BRANCH_BASE,
     });
+
+    const currentComments = JSON.parse(
+      Buffer.from(fileData.content, 'base64').toString('utf-8')
+    )
 
     // Step 2: Add the new comment
     const newComment = {
@@ -46,7 +51,7 @@ exports.handler = async (event, context) => {
       date: new Date().toISOString(),
     };
 
-    allComments.push(newComment);
+    currentComments.push(newComment);
 
     // Step 3: Create a new branch
     const branchName = `add-comment-${newComment.id}`;
@@ -64,7 +69,7 @@ exports.handler = async (event, context) => {
     });
 
     // Step 4: Update the file
-    const updatedContent = Buffer.from(JSON.stringify(allComments, null, 2)).toString('base64');
+    const updatedContent = Buffer.from(JSON.stringify(currentComments, null, 2)).toString('base64');
     await octokit.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
@@ -82,7 +87,7 @@ exports.handler = async (event, context) => {
       title: `New comment from ${name}`,
       head: branchName,
       base: BRANCH_BASE,
-      body: `Comment details:\n- Name: ${name}\n- Email: ${email}\n- Comment: ${comment}\n- Entry: ${entrySlug}`,
+      body: `Comment details:\n- Name: ${name}\n- Email: ${email}\n- Comment: ${comment}\n- Entry: ${entry}`,
     });
 
     return {
